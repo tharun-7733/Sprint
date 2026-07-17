@@ -1,0 +1,37 @@
+# Sprint 1 – Data Foundation Dependencies
+# Core data engineering
+pandas>=2.2.0
+openpyxl>=3.1.2
+numpy>=1.26.0
+sqlalchemy>=2.0.0
+
+# Configuration & environment
+python-dotenv>=1.0.0
+
+# Data validation
+pydantic>=2.5.0
+
+# Logging & output
+loguru>=0.7.2
+rich>=13.7.0
+tabulate>=0.9.0
+
+# Data generation (synthetic data for dev/test)
+faker>=23.0.0
+
+# Testing
+pytest>=8.0.0
+pytest-cov>=4.1.0
+
+# Web / API (Day 07 stubs)
+fastapi>=0.109.0
+uvicorn>=0.27.0
+httpx>=0.26.0
+
+# Dashboard (Day 07 stub)
+streamlit>=1.31.0
+
+# Code quality
+black>=24.1.0
+ruff>=0.2.0
+mypy>=1.8.0
