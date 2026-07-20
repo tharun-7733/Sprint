@@ -27,7 +27,7 @@ def health():
     return {"status": "ok"}
 
 @app.get("/companies")
-def list_companies(sector: str = None, limit: int = 50):
+def list_companies(sector: str = "", limit: int = 50):
     if sector:
         return _query(
             "SELECT c.*, s.sector_name FROM companies c "
