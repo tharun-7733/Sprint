@@ -64,13 +64,18 @@ class LoadResult:
     rejections: list[Rejection] = field(default_factory=list)
     load_timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
-    def add_rejection(self, row_index: int, ticker: Optional[str],
+    def add_rejection(self, row_index: Any, ticker: Optional[str],
                       year: Optional[int], reason: str,
                       raw_data: Optional[dict] = None) -> None:
         self.rows_rejected += 1
+        try:
+            r_idx = int(row_index)
+        except (ValueError, TypeError):
+            r_idx = -1
+
         self.rejections.append(Rejection(
             table=self.table,
-            row_index=row_index,
+            row_index=r_idx,
             ticker=ticker,
             year=year,
             reason=reason,

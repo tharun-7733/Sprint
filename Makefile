@@ -10,11 +10,12 @@ DB          := nifty100.db
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup load ratios test report dashboard api clean lint format
+.PHONY: help setup load ratios test report dashboard api clean lint format \
+        schema3 screen peer radar sprint3 sprint3-test
 
 help:  ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
-	  | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	  | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 # ── Environment ───────────────────────────────────────────────────────────────
 setup: venv/bin/activate  ## Create venv and install all dependencies
@@ -73,12 +74,45 @@ lint: setup  ## Run ruff linter
 format: setup  ## Format code with black
 	venv/bin/black src/ tests/ scripts/
 
+# ── Sprint 3 ──────────────────────────────────────────────────────────────────
+schema3: setup  ## Apply Sprint 3 DDL (creates peer_percentiles table)
+	@echo "🗄️   Applying Sprint 3 schema..."
+	sqlite3 $(DB) < db/schema_sprint3.sql
+	@echo "✅  peer_percentiles table ready."
+
+screen: setup schema3  ## Run screener engine → output/screener_output.xlsx
+	@echo "🔍  Running financial screener..."
+	$(PYTHON) scripts/run_sprint3.py --step screener
+	@echo "✅  screener_output.xlsx generated."
+
+peer: setup schema3  ## Compute peer percentiles → output/peer_comparison.xlsx
+	@echo "📊  Computing peer percentile rankings..."
+	$(PYTHON) scripts/run_sprint3.py --step peer
+	@echo "✅  peer_comparison.xlsx generated."
+
+radar: setup  ## Generate radar charts → reports/radar_charts/*.png
+	@echo "🕸️   Generating radar charts..."
+	@mkdir -p reports/radar_charts
+	$(PYTHON) scripts/run_sprint3.py --step radar
+	@echo "✅  Radar charts saved to reports/radar_charts/"
+
+sprint3: setup load schema3  ## Run the full Sprint 3 pipeline (screener + peer + radar)
+	@echo "🚀  Running Sprint 3 full pipeline..."
+	$(PYTHON) scripts/run_sprint3.py --step all
+	@echo "✅  Sprint 3 pipeline complete."
+
+sprint3-test: setup  ## Run Sprint 3 unit tests (screener + peer analytics)
+	@echo "🧪  Running Sprint 3 tests..."
+	$(PYTEST) tests/screener/ tests/analytics/ -v --tb=short
+	@echo "✅  Sprint 3 tests complete."
+
 # ── Cleanup ───────────────────────────────────────────────────────────────────
 clean:  ## Remove database, generated outputs, and cache
 	@echo "🧹  Cleaning generated artifacts..."
 	rm -f $(DB)
-	rm -f output/*.csv output/*.html output/*.json
+	rm -f output/*.csv output/*.html output/*.json output/*.xlsx
 	rm -f data/raw/.generated
+	rm -rf reports/radar_charts/
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -name "*.pyc" -delete 2>/dev/null || true

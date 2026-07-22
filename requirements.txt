@@ -7,6 +7,7 @@ sqlalchemy>=2.0.0
 
 # Configuration & environment
 python-dotenv>=1.0.0
+pyyaml>=6.0.1
 
 # Data validation
 pydantic>=2.5.0
@@ -30,6 +31,10 @@ httpx>=0.26.0
 
 # Dashboard (Day 07 stub)
 streamlit>=1.31.0
+
+# Sprint 3 – Screener + Peer Engine
+matplotlib>=3.8.0       # radar/polar charts
+scipy>=1.12.0           # statistical helpers (percentile, winsorisation)
 
 # Code quality
 black>=24.1.0

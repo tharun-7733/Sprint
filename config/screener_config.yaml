@@ -1,0 +1,257 @@
+# ============================================================
+# screener_config.yaml — Sprint 3 | Screener Configuration
+# ============================================================
+# Analyst-editable threshold definitions for the financial screener.
+#
+# Filter operators:
+#   min       — metric value must be >= threshold
+#   max       — metric value must be <= threshold
+#   eq        — metric value must equal threshold (for D/E = 0)
+#   positive  — metric value must be > 0 (threshold ignored)
+#   declining — metric must be lower in latest year vs prior year
+#
+# Special handling (automatic, not configurable here):
+#   - D/E max filter: companies in the "Banking & Finance" sector are
+#     automatically skipped (their leverage is structurally different).
+#   - ICR min filter: companies with debt_to_equity == 0 are treated as
+#     ICR = infinity and always pass any ICR minimum threshold.
+# ============================================================
+
+# ─── 15 Filterable Metrics ────────────────────────────────────────────────────
+metrics:
+  roe:
+    label: "Return on Equity (%)"
+    column: roe
+    default_operator: min
+    financials_exempt: false
+
+  debt_to_equity:
+    label: "Debt to Equity Ratio"
+    column: debt_to_equity
+    default_operator: max
+    financials_exempt: true          # skip Banking & Finance on D/E filters
+
+  free_cashflow:
+    label: "Free Cash Flow (Cr)"
+    column: free_cashflow
+    default_operator: positive
+    financials_exempt: false
+
+  revenue_cagr_5yr:
+    label: "Revenue CAGR 5yr (%)"
+    column: revenue_cagr_5yr
+    default_operator: min
+    financials_exempt: false
+
+  pat_cagr_5yr:
+    label: "PAT CAGR 5yr (%)"
+    column: pat_cagr_5yr
+    default_operator: min
+    financials_exempt: false
+
+  operating_margin:
+    label: "Operating Profit Margin (%)"
+    column: operating_margin
+    default_operator: min
+    financials_exempt: false
+
+  price_to_earnings:
+    label: "Price to Earnings Ratio"
+    column: price_to_earnings
+    default_operator: max
+    financials_exempt: false
+
+  price_to_book:
+    label: "Price to Book Ratio"
+    column: price_to_book
+    default_operator: max
+    financials_exempt: false
+
+  dividend_yield:
+    label: "Dividend Yield (%)"
+    column: dividend_yield
+    default_operator: min
+    financials_exempt: false
+
+  interest_coverage:
+    label: "Interest Coverage Ratio"
+    column: interest_coverage
+    default_operator: min
+    financials_exempt: false
+    treat_debt_free_as_infinity: true
+
+  market_cap:
+    label: "Market Cap (Cr)"
+    column: market_cap
+    default_operator: min
+    financials_exempt: false
+
+  net_profit:
+    label: "Net Profit (Cr)"
+    column: net_profit
+    default_operator: min
+    financials_exempt: false
+
+  eps_cagr_5yr:
+    label: "EPS CAGR 5yr (%)"
+    column: eps_cagr_5yr
+    default_operator: min
+    financials_exempt: false
+
+  asset_turnover:
+    label: "Asset Turnover Ratio"
+    column: asset_turnover
+    default_operator: min
+    financials_exempt: false
+
+  revenue:
+    label: "Revenue / Sales (Cr)"
+    column: revenue
+    default_operator: min
+    financials_exempt: false
+
+
+# ─── 6 Preset Screeners ───────────────────────────────────────────────────────
+presets:
+
+  quality_compounder:
+    label: "Quality Compounder"
+    description: >
+      High-quality businesses with strong return ratios, manageable leverage,
+      positive free cash flow, and consistent top-line growth.
+    filters:
+      - metric: roe
+        operator: min
+        threshold: 15.0
+      - metric: debt_to_equity
+        operator: max
+        threshold: 1.0
+      - metric: free_cashflow
+        operator: positive
+        threshold: 0
+      - metric: revenue_cagr_5yr
+        operator: min
+        threshold: 10.0
+
+  value_pick:
+    label: "Value Pick"
+    description: >
+      Attractively priced companies trading below market averages on
+      both earnings and book value, with reasonable leverage and
+      some dividend income.
+    filters:
+      - metric: price_to_earnings
+        operator: max
+        threshold: 20.0
+      - metric: price_to_book
+        operator: max
+        threshold: 3.0
+      - metric: debt_to_equity
+        operator: max
+        threshold: 2.0
+      - metric: dividend_yield
+        operator: min
+        threshold: 1.0
+
+  growth_accelerator:
+    label: "Growth Accelerator"
+    description: >
+      High-growth companies delivering above-market profit and revenue
+      expansion with manageable debt levels.
+    filters:
+      - metric: pat_cagr_5yr
+        operator: min
+        threshold: 20.0
+      - metric: revenue_cagr_5yr
+        operator: min
+        threshold: 15.0
+      - metric: debt_to_equity
+        operator: max
+        threshold: 2.0
+
+  dividend_champion:
+    label: "Dividend Champion"
+    description: >
+      Consistent dividend payers with high yield, sustainable payout ratios,
+      and positive free cash flow to support future dividends.
+    filters:
+      - metric: dividend_yield
+        operator: min
+        threshold: 3.0          # raised from 2% to reduce result set
+      - metric: free_cashflow
+        operator: positive
+        threshold: 0
+      - metric: roe
+        operator: min
+        threshold: 12.0         # quality guard: profitable dividend payers only
+      # Payout < 80% — handled as a special case in engine (uses payout_ratio column)
+      - metric: _payout_ratio_max
+        operator: max
+        threshold: 80.0
+
+  debt_free_blue_chip:
+    label: "Debt-Free Blue Chip"
+    description: >
+      Large-cap companies with minimal debt, strong return on equity,
+      and substantial revenue scale.
+    filters:
+      - metric: debt_to_equity
+        operator: max
+        threshold: 0.15         # near-debt-free (synthetic min D/E is 0.10)
+      - metric: roe
+        operator: min
+        threshold: 12.0
+      - metric: revenue
+        operator: min
+        threshold: 5000.0
+
+  turnaround_watch:
+    label: "Turnaround Watch"
+    description: >
+      Companies showing early signs of operational recovery: revenue
+      re-acceleration, return to positive free cash flow, and declining
+      debt burden.
+    filters:
+      - metric: revenue_cagr_5yr
+        operator: min
+        threshold: 10.0
+      - metric: free_cashflow
+        operator: positive
+        threshold: 0
+      - metric: debt_to_equity
+        operator: declining
+        threshold: 0        # D/E must be lower than prior year
+
+
+# ─── Composite Score Weights ──────────────────────────────────────────────────
+composite_score:
+  winsorisation:
+    lower_percentile: 10    # P10
+    upper_percentile: 90    # P90
+
+  pillars:
+    profitability:
+      weight: 0.35
+      components:
+        roe:   0.15
+        roce:  0.10
+        npm:   0.10
+
+    cash_quality:
+      weight: 0.30
+      components:
+        fcf_cagr_5yr:   0.15
+        cfo_pat_ratio:  0.10
+        fcf_positive:   0.05    # binary flag: 1 if FCF > 0 else 0
+
+    growth:
+      weight: 0.20
+      components:
+        revenue_cagr_5yr: 0.10
+        pat_cagr_5yr:     0.10
+
+    leverage:
+      weight: 0.15
+      components:
+        de_score:   0.10    # inverted: lower D/E = higher score
+        icr_score:  0.05
